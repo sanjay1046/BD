@@ -1,33 +1,29 @@
 # ===============================
 # Rare Variant Detection: FM + DGIM + Exact MapReduce
-# Adapted for no-header TSV dataset
+# Compatible with Cloudera 5.13 VM (Python 2 + Spark 1.x)
 # ===============================
 
-from pyspark.sql import SparkSession
+from pyspark import SparkContext
+from pyspark.sql import SQLContext
 from pyspark.sql.functions import col, concat_ws, when
 import hashlib
 
 # -------------------------------
-# 1️⃣ Initialize Spark
+# 1️⃣ Initialize SparkContext + SQLContext
 # -------------------------------
-spark = SparkSession.builder \
-    .appName("RareVariantDetection") \
-    .config("spark.sql.execution.arrow.enabled", "true") \
-    .getOrCreate()
+sc = SparkContext(appName="RareVariantDetection")
+sqlContext = SQLContext(sc)
 
 # -------------------------------
-# 2️⃣ Load Dataset (no header)
+# 2️⃣ Load Dataset (no header, TSV)
 # -------------------------------
 data_path = "/user/cloudera/exac_variants.tsv"
 
-df = spark.read.csv(
-    data_path,
-    sep="\t",
-    header=False,
-    inferSchema=True
-)
+df = sqlContext.read.format("com.databricks.spark.csv") \
+    .options(header='false', sep='\t', inferSchema='true') \
+    .load(data_path)
 
-print("✅ Dataset Loaded Successfully!")
+print "✅ Dataset Loaded Successfully!"
 df.show(5)
 df.printSchema()
 
@@ -49,7 +45,7 @@ class FlajoletMartin:
         self.max_trailing_zeros = [0] * num_hashes
 
     def _hash(self, value, seed):
-        h = hashlib.sha1(f"{seed}_{value}".encode("utf-8")).hexdigest()
+        h = hashlib.sha1("{}_{}".format(seed, value)).encode("utf-8").hexdigest()
         return int(h, 16)
 
     def _trailing_zeros(self, x):
@@ -65,10 +61,11 @@ class FlajoletMartin:
         for i in range(self.num_hashes):
             h = self._hash(value, i)
             tz = self._trailing_zeros(h)
-            self.max_trailing_zeros[i] = max(self.max_trailing_zeros[i], tz)
+            if tz > self.max_trailing_zeros[i]:
+                self.max_trailing_zeros[i] = tz
 
     def estimate(self):
-        avg = sum([2 ** x for x in self.max_trailing_zeros]) / self.num_hashes
+        avg = sum([2 ** x for x in self.max_trailing_zeros]) / float(self.num_hashes)
         return int(avg)
 
 # -------------------------------
@@ -88,14 +85,14 @@ class DGIM:
             self.buckets.insert(0, (t, 1))
             self._compress()
 
+        # Remove old buckets
         while self.buckets and self.buckets[-1][0] <= t - self.window_size:
             self.buckets.pop()
 
     def _compress(self):
         i = 0
         while i < len(self.buckets) - 2:
-            if (self.buckets[i][1] == self.buckets[i + 1][1] ==
-                    self.buckets[i + 2][1]):
+            if self.buckets[i][1] == self.buckets[i + 1][1] == self.buckets[i + 2][1]:
                 merged = (self.buckets[i + 1][0], self.buckets[i + 1][1] * 2)
                 self.buckets = self.buckets[:i + 1] + [merged] + self.buckets[i + 3:]
             else:
@@ -149,13 +146,13 @@ for i in range(window_size, len(bits)):
 # -------------------------------
 # 9️⃣ Print Results
 # -------------------------------
-print("\n==============================")
-print("🔍 Rare Variant Detection Results")
-print("==============================")
-print("✅ FM Estimated Distinct Rare Variants:", fm.estimate())
-print("✅ Exact Distinct Rare Variants:", exact_count)
-print("✅ DGIM Sliding Window Counts (last 10):", rare_counts[-10:])
-print("✅ Exact Sliding Window Counts (last 10):", exact_window_counts[-10:])
-print("==============================\n")
+print "\n=============================="
+print "🔍 Rare Variant Detection Results"
+print "=============================="
+print "✅ FM Estimated Distinct Rare Variants:", fm.estimate()
+print "✅ Exact Distinct Rare Variants:", exact_count
+print "✅ DGIM Sliding Window Counts (last 10):", rare_counts[-10:]
+print "✅ Exact Sliding Window Counts (last 10):", exact_window_counts[-10:]
+print "==============================\n"
 
-spark.stop()
+sc.stop()
