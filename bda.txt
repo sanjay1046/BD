@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# mapper.py (Python 2 Compatible)
+# mapper.py (Python 2.6 Compatible)
 
 import sys
 import time
@@ -74,7 +74,7 @@ def run_mapper():
             
             # Create a unique key for the variant
             # (chrom, pos, ref, alt)
-            key = "{}_{}_{}_{}".format(parts[0], parts[1], parts[2], parts[3])
+            key = "{0}_{1}_{2}_{3}".format(parts[0], parts[1], parts[2], parts[3])
             
             # 1. Add to exact set
             exact_set.add(key)
@@ -100,20 +100,20 @@ def run_mapper():
     
     # --- Pass all data to the reducer ---
     # We use key-value pairs separated by a tab
-    print "{}\t{}".format("actual_count", actual_count)
-    print "{}\t{}".format("predicted_count", predicted_count)
-    print "{}\t{}".format("total_lines", total_lines)
-    print "{}\t{}".format("processing_time_s", end_time - start_time)
-    print "{}\t{}".format("cpu_time_s", end_cpu - start_cpu)
-    print "{}\t{}".format("memory_usage_mb", mem_usage_mb)
+    # FIXED FOR PYTHON 2.6
+    print "{0}\t{1}".format("actual_count", actual_count)
+    print "{0}\t{1}".format("predicted_count", predicted_count)
+    print "{0}\t{1}".format("total_lines", total_lines)
+    print "{0}\t{1}".format("processing_time_s", end_time - start_time)
+    print "{0}\t{1}".format("cpu_time_s", end_cpu - start_cpu)
+    print "{0}\t{1}".format("memory_usage_mb", mem_usage_mb)
 
 if __name__ == "__main__":
     run_mapper()
 
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# reducer.py (Python 2 Compatible)
+# reducer.py (Python 2.6 Compatible)
 
 import sys
 import math
@@ -168,38 +168,37 @@ def run_reducer():
     # Fault Tolerance = Hardcoded from your image
     fault_tolerance = 2 
     
-    # --- Print Final Summary ---
+    # --- Print Final Summary (FIXED FOR PYTHON 2.6) ---
     print "===================================="
     print "  📊 CG COUNT SUMMARY"
     print "===================================="
-    print "Actual Total CGs:\t{:.0f}".format(A)
-    print "Predicted Total CGs:\t{:.0f}".format(P)
+    print "Actual Total CGs:\t{0:.0f}".format(A)
+    print "Predicted Total CGs:\t{0:.0f}".format(P)
     print "------------------------------------"
-    print "Precision:\t\t{:.4f}".format(precision)
-    print "Recall:\t\t\t{:.4f}".format(recall)
-    print "Approximation Error:\t{:.4f}".format(approx_error)
-    print "Loss Function (MSE):\t{:.2f}".format(loss_mse)
-    print "Error Rate (%%):\t\t{:.2f}".format(error_rate_pct)
+    print "Precision:\t\t{0:.4f}".format(precision)
+    print "Recall:\t\t\t{0:.4f}".format(recall)
+    print "Approximation Error:\t{0:.4f}".format(approx_error)
+    print "Loss Function (MSE):\t{0:.2f}".format(loss_mse)
+    print "Error Rate (%%):\t\t{0:.2f}".format(error_rate_pct)
     print "------------------------------------"
-    print "CPU Time (s):\t\t{:.2f}".format(cpu_time)
-    print "CPU Utilization:\t{:.4f}".format(cpu_util)
-    print "Processing Time (s):\t{:.2f}".format(proc_time)
-    print "Job Completion Time (s):{:.2f}".format(proc_time)
-    print "Latency (ms):\t\t{:.2f}".format(latency_ms)
-    print "Throughput (records/sec):{:.2f}".format(throughput)
-    print "Memory Usage (MB):\t{:.4f}".format(mem_mb)
+    print "CPU Time (s):\t\t{0:.2f}".format(cpu_time)
+    print "CPU Utilization:\t{0:.4f}".format(cpu_util)
+    print "Processing Time (s):\t{0:.2f}".format(proc_time)
+    print "Job Completion Time (s):{0:.2f}".format(proc_time)
+    print "Latency (ms):\t\t{0:.2f}".format(latency_ms)
+    print "Throughput (records/sec):{0:.2f}".format(throughput)
+    print "Memory Usage (MB):\t{0:.4f}".format(mem_mb)
     print "------------------------------------"
-    print "Scalability Score (0-10): {}".format(scalability)
-    print "Fault Tolerance:\t{}".format(fault_tolerance)
+    print "Scalability Score (0-10): {0}".format(scalability)
+    print "Fault Tolerance:\t{0}".format(fault_tolerance)
     print "===================================="
 
 if __name__ == "__main__":
     run_reducer()
 
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# dgim.py (Python 2 Compatible)
+# dgim.py (Python 2.6 Compatible)
 
 import sys
 from collections import deque
@@ -310,20 +309,13 @@ if __name__ == "__main__":
         # Print a report every 100 lines
         if line_count % 100 == 0:
             count_last_500 = dgim.query(500)
-            print "Line {}: Approx. {} variants in last 500. (Window size is 1000)".format(
+            # FIXED FOR PYTHON 2.6
+            print "Line {0}: Approx. {1} variants in last 500. (Window size is 1000)".format(
                 line_count, count_last_500
             )
 
     print "--- Final Report ---"
-    print "Total lines processed: {}".format(line_count)
-    print "Approx. variants in last 1000 (full window): {}".format(dgim.query(1000))
-    print "Approx. variants in last 100: {}".format(dgim.query(100))
-
-
-
-
-
-
-
-
-
+    # FIXED FOR PYTHON 2.6
+    print "Total lines processed: {0}".format(line_count)
+    print "Approx. variants in last 1000 (full window): {0}".format(dgim.query(1000))
+    print "Approx. variants in last 100: {0}".format(dgim.query(100))
