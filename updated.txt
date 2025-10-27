@@ -345,3 +345,118 @@ def run_mapper():
 
 if __name__ == "__main__":
     run_mapper()
+
+
+
+
+
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# mapper_evo_improved.py (Python 2.6 Compatible)
+# SIMULATES an "Evolutionary" model by averaging a "population" of estimators.
+
+import sys
+import time
+import resource
+
+# --- Flajolet-Martin (FM) Algorithm (Standard Class) ---
+def get_trailing_zeros(n):
+    if n == 0: return 32
+    try:
+        s = bin(n)
+        return len(s) - len(s.rstrip('0'))
+    except:
+        return 0
+
+class FMEstimator:
+    def __init__(self):
+        self.bitmap = 0
+    
+    def add(self, item):
+        # We just use a simple hash
+        h = abs(hash(item))
+        z = get_trailing_zeros(h)
+        self.bitmap = self.bitmap | (1 << z)
+        
+    def estimate(self):
+        if self.bitmap == 0: return 0
+        r = 0
+        temp_bitmap = self.bitmap
+        while (temp_bitmap & 1) == 1:
+            temp_bitmap = temp_bitmap >> 1
+            r += 1
+        phi = 0.77351
+        return int(pow(2, r) / phi)
+# --- End of FM Algorithm ---
+
+
+# --- Main Mapper Logic ---
+def run_mapper():
+    # --- Evolutionary Model Simulation ---
+    # We create a "population" of 5 estimators (individuals).
+    # Each one will "evolve" by using a different hash function (simulated with a salt).
+    population_size = 5
+    population = []
+    for _ in range(population_size):
+        population.append(FMEstimator())
+        
+    salts = ["salt_a_123", "salt_b_456", "salt_c_789", "salt_d_abc", "salt_e_xyz"]
+    # --- End Simulation Setup ---
+
+    exact_set = set()
+    total_lines = 0
+    
+    start_time = time.time()
+    start_cpu = resource.getrusage(resource.RUSAGE_SELF).ru_utime
+    
+    for line in sys.stdin:
+        total_lines += 1
+        try:
+            parts = line.strip().split()
+            if len(parts) < 4: continue
+            
+            key = "{0}_{1}_{2}_{3}".format(parts[0], parts[1], parts[2], parts[3])
+            
+            # 1. Add to exact set
+            exact_set.add(key)
+
+            # 2. Add to our "population" of estimators
+            for i in range(population_size):
+                # Each "individual" uses a different hash
+                evolved_key = key + salts[i]
+                population[i].add(evolved_key)
+            
+        except Exception as e:
+            pass 
+    
+    end_time = time.time()
+    end_cpu = resource.getrusage(resource.RUSAGE_SELF).ru_utime
+    
+    mem_usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024.0)
+    mem_usage_mb = mem_usage / 1024.0
+    
+    # --- "Evolve" the final estimate ---
+    # We get the estimate from each "individual"
+    estimates = []
+    for i in range(population_size):
+        estimates.append(population[i].estimate())
+    
+    # "Survival of the fittest": We average them.
+    # This is a common technique to improve FM accuracy.
+    if estimates:
+        predicted_count = sum(estimates) / len(estimates)
+    else:
+        predicted_count = 0
+    # --- End Evolution ---
+
+    actual_count = len(exact_set)
+    
+    print "{0}\t{1}".format("actual_count", actual_count)
+    print "{0}\t{1}".format("predicted_count", predicted_count)
+    print "{0}\t{1}".format("total_lines", total_lines)
+    print "{0}\t{1}".format("processing_time_s", end_time - start_time)
+    print "{0}\t{1}".format("cpu_time_s", end_cpu - start_cpu)
+    print "{0}\t{1}".format("memory_usage_mb", mem_usage_mb)
+
+if __name__ == "__main__":
+    run_mapper()
